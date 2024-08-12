@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/pujarpavan/Automation.git'
+                git 'https://github.com/pujarpavan/automation-framework-Microservices.git'
             }
         }
         stage('Build Docker Image') {
