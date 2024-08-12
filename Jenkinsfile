@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'aws-vm' } // Specify the VM label here
+    
 
     parameters {
         choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
