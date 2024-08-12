@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'aws-vm' } // Specify the VM label here
 
     parameters {
         choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
@@ -8,7 +8,8 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/pujarpavan/automation-framework-Microservices.git'
+                // Use the correct credentials here
+                git credentialsId: 'GitHubCredentials', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git'
             }
         }
         stage('Build Docker Image') {
