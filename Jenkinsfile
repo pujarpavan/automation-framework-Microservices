@@ -1,74 +1,47 @@
 pipeline {
-    agent any  // Runs on any available Jenkins agent
-
-    environment {
-        NODE_VERSION = '16.x'  // Specify the Node.js version
-    }
-
+    // Parameters to allow selection of the module to test
     parameters {
-        string(name: 'branchName', defaultValue: 'main', description: 'The Git branch to test')
-        string(name: 'commitId', description: 'The specific commit ID to test (optional)')
+        choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
     }
 
     stages {
-        stage('Checkout') {
+        // Stage to clone the Git repository
+        stage('Clone Repository') {
+            steps {
+                // Clone the specified repository using Git credentials
+                git credentialsId: 'Git', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git'
+            }
+        }
+        
+        // Stage to build Docker images
+        stage('Build Docker Image') {
+            steps {
+                // Build Docker images defined in the docker-compose file
+                sh 'docker-compose build'
+            }
+        }
+
+        // Stage to run tests
+        stage('Run Tests') {
             steps {
                 script {
-                    echo "Checking out branch ${params.branchName}"
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: "*/${params.branchName}"]],
-                        userRemoteConfigs: [[url: 'https://github.com/pujarpavan/automation-framework-Microservices.git']]
-                    ])
-                    
-                    if (params.commitId) {
-                        sh "git checkout ${params.commitId}"
+                    // Set the environment variable for the selected module and run the tests
+                    withEnv(["MODULE=${MODULE}"]) {
+                        sh 'docker-compose up --abort-on-container-exit'
                     }
                 }
             }
         }
-
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    echo "Installing Node.js ${env.NODE_VERSION}"
-                    tool name: 'NodeJS', type: 'NodeJS'
-                    
-                    echo "Installing project dependencies"
-                    sh 'npm install'
-                }
-            }
-        }
-
-        stage('Run TestCafe Tests') {
-            steps {
-                script {
-                    echo "Running TestCafe tests"
-                    sh 'npx testcafe chrome tests/ --reporter json:results/test-results.json'
-                }
-            }
-        }
-
-        stage('Archive Test Results') {
-            steps {
-                script {
-                    echo "Archiving test results"
-                    archiveArtifacts artifacts: 'results/test-results.json', allowEmptyArchive: true
-                }
-            }
-        }
     }
 
+    // Post actions to archive artifacts and clean up
     post {
         always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
-        }
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed.'
+            // Archive test reports and other relevant files
+            archiveArtifacts artifacts: '**/reports/**', allowEmptyArchive: true
+            
+            // Clean up Docker containers after tests have run
+            sh 'docker-compose down'
         }
     }
 }
