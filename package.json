@@ -1,0 +1,17 @@
+{
+    "name": "automation-framework",
+    "version": "1.0.0",
+    "description": "Automation framework for microservices using TestCafe",
+    "scripts": {
+      "test": "testcafe chrome:headless tests/**/*.js",
+      "test-login": "testcafe chrome:headless tests/login/loginTests.js",
+      "test-pipeline": "testcafe chrome:headless tests/pipeline/pipelineTests.js",
+      "test-insight": "testcafe chrome:headless tests/insight/insightTests.js",
+      "test-vsm": "testcafe chrome:headless tests/vsm/vsmTests.js",
+      "start": "node testcafe-config.js"
+    },
+    "dependencies": {
+      "testcafe": "^1.17.1"
+    }
+  }
+  

@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  testcafe:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - TEST_MODULE=${MODULE}
+    command: ["npx", "testcafe", "chrome:headless", "tests/${TEST_MODULE}/*Tests.js"]
