@@ -9,8 +9,8 @@ class LoginPage {
 
     async login(t, username, password) {
         await t
-            .typeText(this.usernameInput, username)
-            .typeText(this.passwordInput, password)
+            .typeText(this.usernameInput, admin)
+            .typeText(this.passwordInput, admin)
             .click(this.submitButton);
     }
 }
