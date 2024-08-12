@@ -1,6 +1,5 @@
 pipeline {
-    
-
+    agent any  
     parameters {
         choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
     }
