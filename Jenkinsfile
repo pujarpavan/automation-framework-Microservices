@@ -9,7 +9,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 // Use the correct credentials here
-                git credentialsId: 'GitHubCredentials', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git'
+                git credentialsId: '646866b7-d0b0-4e4c-8e14-fca871cb2adf', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git'
             }
         }
         stage('Build Docker Image') {
