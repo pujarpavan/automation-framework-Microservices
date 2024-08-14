@@ -1,7 +1,7 @@
 pipeline {
      agent any
     // Parameters to allow selection of the module to test
-    parameters {
+   parameters {
         choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
     }
 
@@ -10,15 +10,15 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 // Clone the specified repository using Git credentials
-                git credentialsId: 'Git', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git'
+                git credentialsId: 'GitHubCredentials', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git'
             }
         }
-        
-        // Stage to build Docker images
-        stage('Build Docker Image') {
+
+        // Stage to install dependencies
+        stage('Install Dependencies') {
             steps {
-                // Build Docker images defined in the docker-compose file
-                sh 'docker-compose build'
+                // Install project dependencies
+                sh 'npm install'
             }
         }
 
@@ -26,23 +26,18 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    // Set the environment variable for the selected module and run the tests
-                    withEnv(["MODULE=${MODULE}"]) {
-                        sh 'docker-compose up --abort-on-container-exit'
-                    }
+                    // Running tests using TestCafe
+                    sh "npx testcafe chrome:headless tests/${MODULE}/*Tests.js"
                 }
             }
         }
     }
 
-    // Post actions to archive artifacts and clean up
+    // Post actions to archive artifacts
     post {
         always {
             // Archive test reports and other relevant files
             archiveArtifacts artifacts: '**/reports/**', allowEmptyArchive: true
-            
-            // Clean up Docker containers after tests have run
-            sh 'docker-compose down'
         }
     }
 }
