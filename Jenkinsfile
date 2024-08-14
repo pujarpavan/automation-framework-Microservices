@@ -14,29 +14,25 @@ pipeline {
             }
         }
 
-        // Stage to install dependencies
-        stage('Install Dependencies') {
-            steps {
-                // Install project dependencies
-                sh 'npm install'
-            }
-        }
-
-        // Stage to run tests
-        stage('Run Tests') {
+        stage('Run Tests in Docker') {
             steps {
                 script {
-                    // Running tests using TestCafe
-                    sh "npx testcafe chrome:headless tests/${MODULE}/*Tests.js"
+                    // Running TestCafe tests inside a Node.js Docker container
+                    sh """
+                    docker run --rm \
+                        -v \$(pwd):/tests \
+                        -w /tests \
+                        node:16 \
+                        sh -c "npm install && npx testcafe chrome:headless tests/\${MODULE}/*Tests.js"
+                    """
                 }
             }
         }
     }
 
-    // Post actions to archive artifacts
     post {
         always {
-            // Archive test reports and other relevant files
+            // Optionally archive reports or artifacts if generated
             archiveArtifacts artifacts: '**/reports/**', allowEmptyArchive: true
         }
     }
