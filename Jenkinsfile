@@ -17,22 +17,16 @@ pipeline {
         stage('Run Tests in Docker') {
             steps {
                 script {
-                    // Running TestCafe tests inside a Node.js Docker container
+                    // Run tests using Node.js Docker image
                     sh """
-                    docker run --rm \
-                        -v \$(pwd):/tests \
-                        -w /tests \
-                        node:16 \
-                        sh -c "npm install && npx testcafe chrome:headless tests/\${MODULE}/*Tests.js"
+                    docker run --rm -v \${WORKSPACE}:/tests -w /tests node:16 sh -c "npm install && npx testcafe chrome:headless tests/${MODULE}/*Tests.js"
                     """
                 }
             }
         }
     }
-
     post {
         always {
-            // Optionally archive reports or artifacts if generated
             archiveArtifacts artifacts: '**/reports/**', allowEmptyArchive: true
         }
     }
