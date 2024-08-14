@@ -1,27 +1,29 @@
 pipeline {
-     agent any
-    // Parameters to allow selection of the module to test
-   parameters {
+    agent {
+        docker {
+            image 'node:16'
+            args '-u root:root' // Optional: run as root user if needed
+        }
+    }
+
+    parameters {
         choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
     }
 
     stages {
-        // Stage to clone the Git repository
         stage('Clone Repository') {
             steps {
-                // Clone the specified repository using Git credentials
-                git credentialsId: 'GitHubCredentials', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git', branch: 'main' // Ensure this matches your branch
+                git credentialsId: 'GitHubCredentials', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git'
             }
         }
-
-        stage('Run Tests in Docker') {
+        stage('Install Dependencies') {
             steps {
-                script {
-                    // Run tests using Node.js Docker image
-                    sh """
-                    docker run --rm -v \${WORKSPACE}:/tests -w /tests node:16 sh -c "npm install && npx testcafe chrome:headless tests/${MODULE}/*Tests.js"
-                    """
-                }
+                sh 'npm install' // Install dependencies inside the Docker container
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                sh "npx testcafe chrome:headless tests/${MODULE}/*Tests.js" // Run the selected tests
             }
         }
     }
