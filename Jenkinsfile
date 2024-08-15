@@ -13,6 +13,14 @@ pipeline {
                 git credentialsId: 'GitHubCredentials', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git', branch: 'main' // Ensure this matches your branch
             }
         }
+         stage('Check Node.js and npm') {
+            steps {
+                script {
+                    sh 'node -v' // Check Node.js version
+                    sh 'npm -v'  // Check npm version
+                }
+            }
+        }
 
         stage('Install Dependencies') {
             steps {
