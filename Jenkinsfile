@@ -1,6 +1,10 @@
 pipeline {
-    agent any
-    
+    agent {
+        docker {
+            image 'node:16' // Use a Node.js Docker image with version 16
+            args '-v /var/jenkins_home/workspace:/workspace' // Mount the workspace directory
+        }
+    }
     parameters {
         choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
     }
