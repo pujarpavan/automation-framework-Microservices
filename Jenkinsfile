@@ -1,52 +1,78 @@
-pipeline {
-    agent {
-        docker {
-            image 'node:16' // Use a Node.js Docker image with version 16
-            args '-v /var/jenkins_home/workspace:/workspace' // Mount the workspace directory
-        }
-    }
-    parameters {
-        choice(name: 'MODULE', choices: ['login', 'pipeline', 'insight', 'vsm'], description: 'Select module to test')
-    }
+properties([
+    parameters([
+        string(name: 'testDir',
+            defaultValue: 'tests/**/*',
+            description: 'Test directory. For example: tests/helloWorldDeployment.js'),
+    ])
+])
 
-    stages {
-        // Stage to clone the Git repository
-        stage('Clone Repository') {
-            steps {
-                // Clone the specified repository using Git credentials
-                git credentialsId: 'GitHubCredentials', url: 'https://github.com/pujarpavan/automation-framework-Microservices.git', branch: 'main' // Ensure this matches your branch
-            }
-        }
-         stage('Check Node.js and npm') {
-            steps {
-                script {
-                    sh 'node -v' // Check Node.js version
-                    sh 'npm -v'  // Check npm version
+node('codebuild-ucd') {
+    ansiColor('xterm') {
+        try {
+            timeout(time: 90, unit: 'MINUTES') {
+                withAWS(credentials: 'aws-velocity-ecr') {
+                    def remote = [
+                        allowAnyHosts: true,
+                        pty: true
+                    ]
+                    def launchInstallDir = '/opt/automation-framework-Microservices'
+                    def instanceIp = '10.134.119.164'
+
+                    remote.name = instanceIp
+                    remote.host = instanceIp
+                    remote.user = 'launch'
+                    remote.password = 'launch'
+
+                    stage('Pull SCM') {
+                        checkout scm
+                    }
+
+                    stage('Checkout') {
+                        echo 'Pulling from branch: ' + env.BRANCH_NAME
+                        dir('/opt/automation-framework-Microservices') {
+                            git(
+                                branch: env.BRANCH_NAME,
+                                credentialsId: 'HCL_Github',
+                                url: 'git@github.com:pujarpavan/automation-framework-Microservices.git'
+                            )
+
+                            sshCommand(
+                                remote: remote,
+                                sudo: true,
+                                failOnError: false,
+                                command: "pwd; cd ${launchInstallDir}; sudo git checkout ${env.BRANCH_NAME}"
+                            )
+
+                            sshCommand(
+                                remote: remote,
+                                sudo: true,
+                                failOnError: false,
+                                command: "pwd; cd ${launchInstallDir}; sudo git pull"
+                            )
+                        }
+                    }
+
+                    stage('Execute Tests') {
+                        sshCommand(
+                            remote: remote,
+                            sudo: true,
+                            failOnError: false,
+                            command: "docker run -u root -v /opt/automation-framework-Microservices:/automation-framework-Microservices -v /opt/automation-framework-Microservices/screenshots:/automation-framework-Microservices/screenshots -v /opt/automation-framework-Microservices/test-results:/automation-framework-Microservices/test-results -v /var/run/docker.sock:/var/run/docker.sock -it testcafe/testcafe \"chromium --no-sandbox --ignore-certificate-errors --start-fullscreen\" --skip-js-errors --experimental-multiple-windows --quarantine-mode --screenshots-on-fails --screenshots automation-framework-Microservices/screenshots/ --reporter spec,xunit:automation-framework-Microservices/test-results/chrome-headless.xml automation-framework-Microservices/${params.testDir}"
+                        )
+                        sleep 5
+                    }
+
+                    stage('Publish Results') {
+                        echo 'Upload TestCafe results to Jenkins'
+                        sshGet remote: remote, from: '/opt/automation-framework-Microservices/test-results/chrome-headless.xml', into: 'chrome-headless.xml', override: true
+                        junit testResults: 'chrome-headless.xml'
+                    }
                 }
             }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                // Ensure Node.js and npm are installed
-                sh 'npm install'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                script {
-                    // Run the tests using the selected module
-                    sh "npx testcafe chrome:headless tests/${MODULE}/*Tests.js"
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            // Archive the test reports if available
-            archiveArtifacts artifacts: '**/reports/**', allowEmptyArchive: true
+        } catch (err) {
+            // Print the error and fail the build
+            println "An error occurred: ${err}"
+            error('Exception thrown above')
         }
     }
 }
